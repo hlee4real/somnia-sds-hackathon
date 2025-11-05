@@ -7,10 +7,8 @@ import { getSDK } from './sdk';
 import {
   getCmcApiKey,
   CMC_API_URL,
-  PRICE_SCHEMA_ID,
   PRICE_DATA_ID,
   PRICE_EVENT_ID,
-  PUBLISHER_ADDRESS,
   RETRY_INTERVAL_MS,
   getPriceSchemaId,
   getPublisherAddress,

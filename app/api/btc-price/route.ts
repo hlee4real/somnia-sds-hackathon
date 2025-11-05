@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSDK } from '../../../lib/sdk';
-import { PRICE_SCHEMA_ID, PUBLISHER_ADDRESS } from '../../../lib/constants';
+import { getPriceSchemaId, getPublisherAddress } from '../../../lib/constants';
 import { decodePriceUpdate, formatPrice, formatTimestamp } from '../../../lib/encoding';
 import { fetchAndPublishPrice } from '../../../lib/price-fetcher';
 
@@ -12,7 +12,8 @@ export async function GET(req: NextRequest) {
   try {
     console.log('📖 Fetching current BTC price from Streams...');
 
-    if (!PRICE_SCHEMA_ID) {
+    const schemaId = getPriceSchemaId();
+    if (!schemaId) {
       return NextResponse.json(
         { success: false, error: 'Schema not configured. Please run deploy-schema.ts and set PRICE_SCHEMA_ID in .env' },
         { status: 500 }
@@ -23,8 +24,8 @@ export async function GET(req: NextRequest) {
 
     // Get current price data from Streams
     const data = await sdk.streams.getAllPublisherDataForSchema(
-      PRICE_SCHEMA_ID,
-      PUBLISHER_ADDRESS as `0x${string}`
+      schemaId,
+      getPublisherAddress() as `0x${string}`
     );
 
     if (!data || data.length === 0) {
@@ -66,7 +67,8 @@ export async function POST(req: NextRequest) {
   try {
     console.log('🔄 Manual price update triggered...');
 
-    if (!PRICE_SCHEMA_ID) {
+    const schemaId = getPriceSchemaId();
+    if (!schemaId) {
       return NextResponse.json(
         { success: false, error: 'Schema not configured. Please run deploy-schema.ts and set PRICE_SCHEMA_ID in .env' },
         { status: 500 }
@@ -86,8 +88,8 @@ export async function POST(req: NextRequest) {
     // Get the newly published price
     const sdk = getSDK();
     const data = await sdk.streams.getAllPublisherDataForSchema(
-      PRICE_SCHEMA_ID,
-      PUBLISHER_ADDRESS as `0x${string}`
+      schemaId,
+      getPublisherAddress() as `0x${string}`
     );
 
     if (!data || data.length === 0) {

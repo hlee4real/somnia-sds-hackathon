@@ -12,8 +12,22 @@ import { config } from 'dotenv';
 import { resolve, join } from 'path';
 import cron from 'node-cron';
 
-// Load environment variables from parent directory
-config({ path: resolve(join(__dirname, '../../.env')) });
+// Load environment variables from bitcoin-price-tracker/.env.local
+// When running from project root: npx tsx bitcoin-price-tracker/scripts/start-price-fetcher.ts
+// The .env.local file is in bitcoin-price-tracker directory
+const envPath = resolve(join(__dirname, '../.env.local'));
+console.log(`📄 Loading .env.local from: ${envPath}`);
+const result = config({ path: envPath });
+
+if (result.error) {
+  console.error('❌ Error loading .env file:', result.error);
+  process.exit(1);
+}
+
+console.log('✅ Environment variables loaded');
+console.log(`🔑 CMC_API_KEY: ${process.env.CMC_API_KEY ? '[SET]' : '[NOT SET]'}`);
+console.log(`🌐 RPC_URL: ${process.env.RPC_URL ? '[SET]' : '[NOT SET]'}`);
+console.log(`📋 PRICE_SCHEMA_ID: ${process.env.PRICE_SCHEMA_ID ? '[SET]' : '[NOT SET]'}\n`);
 
 import { fetchAndPublishPrice } from '../lib/price-fetcher';
 import { FETCH_INTERVAL_MS, RETRY_INTERVAL_MS } from '../lib/constants';
