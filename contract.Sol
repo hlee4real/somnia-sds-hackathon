@@ -1,0 +1,92 @@
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.20;
+
+contract BitcoinBet {
+    struct Bet {
+        address user;
+        uint256 priceAtBet;     // BTC price when user bet
+        uint256 timestamp;      // when bet was made
+        bool prediction;        // true = higher, false = lower
+        bool settled;           // whether bet result is known
+        bool won;               // result of bet
+    }
+
+    address public admin;
+    uint256 public currentPrice;
+    uint256 public currentPriceTimestamp;
+
+    Bet[] public bets;
+    mapping(address => uint256[]) public userBets;
+
+    event PriceUpdated(uint256 price, uint256 timestamp);
+    event BetPlaced(address indexed user, uint256 price, bool prediction, uint256 timestamp, uint256 betId);
+    event BetSettled(address indexed user, uint256 betId, bool won);
+
+    modifier onlyAdmin() {
+        require(msg.sender == admin, "Not admin");
+        _;
+    }
+
+    constructor() {
+        admin = msg.sender;
+    }
+
+    /// @notice Admin updates the current BTC price
+    function updatePrice(uint256 _price, uint256 _timestamp) external onlyAdmin {
+        currentPrice = _price;
+        currentPriceTimestamp = _timestamp;
+
+        emit PriceUpdated(_price, _timestamp);
+
+        // Settle all pending bets
+        for (uint256 i = 0; i < bets.length; i++) {
+            if (!bets[i].settled && bets[i].timestamp < _timestamp) {
+                bool won;
+
+                if (bets[i].prediction) {
+                    // User predicted price will go higher
+                    won = _price > bets[i].priceAtBet;
+                } else {
+                    // User predicted price will go lower
+                    won = _price < bets[i].priceAtBet;
+                }
+
+                bets[i].won = won;
+                bets[i].settled = true;
+
+                emit BetSettled(bets[i].user, i, won);
+            }
+        }
+    }
+
+    /// @notice User places a bet predicting BTC will go higher or lower
+    /// @param _prediction true = higher, false = lower
+    function placeBet(bool _prediction) external {
+        require(currentPrice > 0, "No price available yet");
+
+        Bet memory newBet = Bet({
+            user: msg.sender,
+            priceAtBet: currentPrice,
+            timestamp: block.timestamp,
+            prediction: _prediction,
+            settled: false,
+            won: false
+        });
+
+        bets.push(newBet);
+        userBets[msg.sender].push(bets.length - 1);
+
+        emit BetPlaced(msg.sender, currentPrice, _prediction, block.timestamp, bets.length - 1);
+    }
+
+    /// @notice Get all bet IDs of a user
+    function getUserBets(address _user) external view returns (uint256[] memory) {
+        return userBets[_user];
+    }
+
+    /// @notice Get details of a specific bet
+    function getBet(uint256 _betId) external view returns (Bet memory) {
+        require(_betId < bets.length, "Invalid bet ID");
+        return bets[_betId];
+    }
+}
