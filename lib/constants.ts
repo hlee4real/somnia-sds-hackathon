@@ -64,8 +64,8 @@ export const PUBLISHER_ADDRESS = process.env.PUBLISHER_ADDRESS || process.env.NE
 export const CMC_API_KEY = process.env.CMC_API_KEY || '';
 export const CMC_API_URL = 'https://pro-api.coinmarketcap.com/v1/cryptocurrency/quotes/latest';
 
-// Fetch interval (1 minute = 60000ms)
-export const FETCH_INTERVAL_MS = 1 * 60 * 1000;
+// Fetch interval (2 minutes = 120000ms)
+export const FETCH_INTERVAL_MS = 2 * 60 * 1000;
 
 // Retry interval on error (30 seconds)
 export const RETRY_INTERVAL_MS = 30 * 1000;

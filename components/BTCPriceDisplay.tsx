@@ -6,6 +6,7 @@
 
 import { useBTCPrice, useRefreshBTCPrice } from '../hooks/useBTCPrice';
 import { formatPrice, formatTimestamp } from '../lib/encoding';
+import { ConnectWallet } from './ConnectWallet';
 
 export default function BTCPriceDisplay() {
   const priceState = useBTCPrice();
@@ -60,7 +61,12 @@ export default function BTCPriceDisplay() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-orange-500 via-yellow-500 to-amber-600">
       <div className="container mx-auto px-4 py-8">
-        {/* Header */}
+        {/* Header with Wallet Connect */}
+        <div className="flex justify-end mb-8">
+          <ConnectWallet />
+        </div>
+
+        {/* Title */}
         <div className="text-center mb-12">
           <h1 className="text-5xl font-bold text-white mb-4">
             Bitcoin Price Tracker
@@ -99,7 +105,7 @@ export default function BTCPriceDisplay() {
               </div>
               <div className="bg-white/5 rounded-xl p-4">
                 <div className="text-white/60 text-sm mb-1">Update Interval</div>
-                <div className="text-white text-lg font-medium">Every 30 seconds</div>
+                <div className="text-white text-lg font-medium">Every 2 minutes</div>
               </div>
             </div>
 
@@ -144,7 +150,7 @@ export default function BTCPriceDisplay() {
           <div className="bg-white/10 backdrop-blur-lg rounded-xl p-6 border border-white/20">
             <div className="text-3xl mb-2">⚡</div>
             <h3 className="text-white font-semibold mb-2">Real-time Updates</h3>
-            <p className="text-white/70 text-sm">Automatic price updates every 30 seconds</p>
+            <p className="text-white/70 text-sm">Automatic price updates every 2 minutes</p>
           </div>
           <div className="bg-white/10 backdrop-blur-lg rounded-xl p-6 border border-white/20">
             <div className="text-3xl mb-2">🔒</div>

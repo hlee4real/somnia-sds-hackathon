@@ -1,7 +1,7 @@
 /**
  * Bitcoin Price Fetcher Service with Cron Job
  *
- * This script runs continuously and fetches Bitcoin price every 30 seconds,
+ * This script runs continuously and fetches Bitcoin price every 2 minutes,
  * publishing it to Somnia Streams for real-time updates.
  *
  * Usage:
@@ -38,7 +38,7 @@ console.log(`🔄 Retry interval on error: ${RETRY_INTERVAL_MS / 1000} seconds\n
 
 // Track if we're currently fetching
 let isFetching = false;
-let retryTimeout: NodeJS.Timeout | null = null;
+let retryTimeout: ReturnType<typeof setTimeout> | null = null;
 
 /**
  * Fetch price with retry logic
@@ -78,10 +78,10 @@ async function main() {
   console.log('🎬 Fetching initial price...\n');
   await fetchWithRetry();
 
-  // Schedule cron job to run every 1 minute
-  // Cron pattern: "* * * * *" = every minute
-  console.log('📅 Setting up cron job (every 1 minute)...');
-  cron.schedule('* * * * *', async () => {
+  // Schedule cron job to run every 2 minutes
+  // Cron pattern: "*/2 * * * *" = every 2 minutes
+  console.log('📅 Setting up cron job (every 2 minutes)...');
+  cron.schedule('*/2 * * * *', async () => {
     console.log(`\n⏰ Cron triggered at ${new Date().toISOString()}`);
     await fetchWithRetry();
   });
