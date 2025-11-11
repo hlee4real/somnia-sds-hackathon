@@ -7,6 +7,9 @@
 import { useBTCPrice, useRefreshBTCPrice } from '../hooks/useBTCPrice';
 import { formatPrice, formatTimestamp } from '../lib/encoding';
 import { ConnectWallet } from './ConnectWallet';
+import PlaceBet from './PlaceBet';
+import BetHistory from './BetHistory';
+import AdminControls from './AdminControls';
 
 export default function BTCPriceDisplay() {
   const priceState = useBTCPrice();
@@ -143,6 +146,18 @@ export default function BTCPriceDisplay() {
               )}
             </div>
           </div>
+        </div>
+
+        {/* Admin Controls - Manual Price Update */}
+        <AdminControls />
+
+        {/* Betting Section */}
+        <div className="max-w-4xl mx-auto mt-8 grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {/* Place Bet */}
+          <PlaceBet currentPrice={priceState.priceBigInt} />
+
+          {/* Bet History */}
+          <BetHistory />
         </div>
 
         {/* Features */}

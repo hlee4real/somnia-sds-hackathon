@@ -19,6 +19,9 @@ import {
   encodePriceEventData,
   formatPrice,
 } from './encoding';
+import { createWalletClient, http, createPublicClient, defineChain } from 'viem';
+import { privateKeyToAccount } from 'viem/accounts';
+import { BITCOIN_BET_ABI } from './contract-abi';
 
 export interface BTCPriceData {
   price: number;
@@ -129,6 +132,132 @@ export async function publishPriceUpdate(priceData: BTCPriceData): Promise<strin
 }
 
 /**
+ * Update price on the smart contract
+ */
+export async function updateContractPrice(priceData: BTCPriceData): Promise<void> {
+  try {
+    console.log('📝 Updating price on smart contract...');
+
+    const contractAddress = process.env.CONTRACT_ADDRESS as `0x${string}`;
+    const privateKey = process.env.PRIVATE_KEY as `0x${string}`;
+    const rpcUrl = process.env.RPC_URL;
+
+    if (!contractAddress) {
+      console.warn('⚠️  CONTRACT_ADDRESS not set, skipping contract update');
+      return;
+    }
+
+    if (!privateKey || !rpcUrl) {
+      console.warn('⚠️  PRIVATE_KEY or RPC_URL not set, skipping contract update');
+      return;
+    }
+
+    // Define Somnia chain configuration with defineChain for proper typing
+    const somniaChain = defineChain({
+      id: 50312, // Correct Somnia Devnet chain ID
+      name: 'Somnia Devnet',
+      nativeCurrency: {
+        decimals: 18,
+        name: 'STT',
+        symbol: 'STT',
+      },
+      rpcUrls: {
+        default: {
+          http: [rpcUrl],
+        },
+      },
+      testnet: true,
+    });
+
+    const account = privateKeyToAccount(privateKey);
+
+    const walletClient = createWalletClient({
+      account,
+      chain: somniaChain,
+      transport: http(rpcUrl),
+    });
+
+    const publicClient = createPublicClient({
+      chain: somniaChain,
+      transport: http(rpcUrl),
+    });
+
+    // Convert price to cents (multiply by 100) to avoid decimals
+    const priceCents = BigInt(Math.floor(priceData.price * 100));
+    const timestamp = BigInt(priceData.timestamp);
+
+    console.log(`💰 Price to set: ${priceCents} (${Number(priceCents) / 100})`);
+    console.log(`⏰ Timestamp: ${timestamp} (${new Date(Number(timestamp) * 1000).toISOString()})`);
+    console.log(`📍 Contract: ${contractAddress}`);
+    console.log(`👤 Sender: ${account.address}\n`);
+
+    // Check balance first
+    const balance = await publicClient.getBalance({ address: account.address });
+    console.log(`💳 Account balance: ${balance} wei (${Number(balance) / 1e18} STT)`);
+
+    if (balance === 0n) {
+      console.error('❌ Account has no balance! Please fund your wallet with STT tokens.');
+      return;
+    }
+
+    try {
+      // Estimate gas first
+      const gasEstimate = await publicClient.estimateContractGas({
+        address: contractAddress,
+        abi: BITCOIN_BET_ABI,
+        functionName: 'updatePrice',
+        args: [priceCents, timestamp],
+        account,
+      });
+
+      console.log(`⛽ Estimated gas: ${gasEstimate}`);
+
+      // Get current nonce
+      const nonce = await publicClient.getTransactionCount({
+        address: account.address,
+      });
+      console.log(`🔢 Nonce: ${nonce}`);
+
+      // Call updatePrice on the contract with explicit parameters
+      const hash = await walletClient.writeContract({
+        address: contractAddress,
+        abi: BITCOIN_BET_ABI,
+        functionName: 'updatePrice',
+        args: [priceCents, timestamp],
+        gas: gasEstimate + BigInt(50000), // Add buffer
+        nonce,
+        type: 'legacy', // Force legacy transaction
+      });
+
+      console.log('⏳ Waiting for transaction confirmation...');
+      console.log(`📋 Transaction hash: ${hash}`);
+
+      // Wait for transaction confirmation
+      const receipt = await publicClient.waitForTransactionReceipt({ hash });
+
+      console.log('✅ Contract price updated successfully!');
+      console.log(`⛽ Gas used: ${receipt.gasUsed.toString()}`);
+      console.log(`📊 Status: ${receipt.status}\n`);
+
+    } catch (txError: any) {
+      console.error('❌ Transaction error:', txError.message);
+      if (txError.cause) {
+        console.error('Cause:', txError.cause);
+      }
+      if (txError.details) {
+        console.error('Details:', txError.details);
+      }
+      throw txError;
+    }
+
+  } catch (error: any) {
+    console.error('❌ Error updating contract price:', error.message);
+    console.error('Full error:', error);
+    // Don't throw - we don't want to fail the entire process if contract update fails
+  }
+}
+
+/**
  * Main function: Fetch and publish BTC price
  * Returns true if successful, false if should retry
  */
@@ -136,6 +265,8 @@ export async function fetchAndPublishPrice(): Promise<boolean> {
   try {
     const priceData = await fetchBTCPrice();
     await publishPriceUpdate(priceData);
+    // Also update the smart contract
+    await updateContractPrice(priceData);
     return true;
   } catch (error) {
     console.error('❌ Failed to fetch and publish price');
