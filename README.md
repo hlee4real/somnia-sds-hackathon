@@ -299,4 +299,4 @@ async function publishPrice(btcPrice: number) {
 ## Learn More
 
 - [Somnia Documentation](https://docs.somnia.network)
-- [Somnia Data Streams SDK](https://github.com/somnia-network/streams-sdk)
+- [Somnia Data Streams SDK](https://docs.somnia.network/somnia-data-streams)
